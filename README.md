@@ -1,1 +1,1 @@
-# S-de-mi-mi-ju
+# Sdetmi scraper

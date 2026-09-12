@@ -1,0 +1,33 @@
+name: Aktualizacia Kalendara
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # Spustí sa každý deň o 3:00 ráno
+  workflow_dispatch:      # Umožňuje spustiť skript aj ručne
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stiahnutie kódu
+        uses: actions/checkout@v3
+
+      - name: Nastavenie Pythonu
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Inštalácia knižníc
+        run: |
+          pip install requests beautifulsoup4 ics
+
+      - name: Spustenie scrapera
+        run: python scraper.py
+
+      - name: Uloženie a publikovanie sdetmi.ics
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add sdetmi.ics
+          git commit -m "Automatická aktualizácia kalendára" || exit 0
+          git push

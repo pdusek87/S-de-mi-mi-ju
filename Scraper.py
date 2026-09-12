@@ -1,3 +1,4 @@
+import os
 import re
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -15,43 +16,54 @@ HEADERS = {
 
 def main():
     cal = Calendar()
+    found_events = False
 
     # Prejde prvých 5 stránok aktuálnych akcií
     for page in range(1, 6):
         url = f"{BASE_URL}?p={page}"
         try:
-            res = requests.get(url, headers=HEADERS, timeout=10)
+            res = requests.get(url, headers=HEADERS, timeout=15)
             if res.status_code != 200:
-                break
-        except Exception:
-            break
-
-        soup = BeautifulSoup(res.text, "html.parser")
-        articles = soup.find_all(["article", "div"], class_=re.compile(r"item|event|podujatie", re.I))
-
-        for item in articles:
-            title_tag = item.find(["h2", "h3", "a"])
-            if not title_tag:
-                continue
-            title = title_tag.get_text(strip=True)
-            if not title:
                 continue
 
-            link = title_tag.get("href", "")
-            if link and not link.startswith("http"):
-                link = "https://www.sdetmi.com" + link
+            soup = BeautifulSoup(res.text, "html.parser")
+            articles = soup.find_all(
+                ["article", "div"],
+                class_=re.compile(r"item|event|podujatie|detail", re.I),
+            )
 
-            event = Event()
-            event.name = title
-            event.description = f"Zdroj a detail: {link}" if link else "Podujatie zo sdetmi.com"
-            event.begin = datetime.now().strftime("%Y-%m-%d")
-            event.make_all_day()
+            for item in articles:
+                title_tag = item.find(["h2", "h3", "h4", "a"])
+                if not title_tag:
+                    continue
+                title = title_tag.get_text(strip=True)
+                if not title or len(title) < 3:
+                    continue
 
-            cal.events.add(event)
+                link = title_tag.get("href", "")
+                if link and not link.startswith("http"):
+                    link = "https://www.sdetmi.com" + link
 
-    # Uloženie do súboru
+                event = Event()
+                event.name = title
+                event.description = (
+                    f"Zdroj a detail: {link}"
+                    if link
+                    else "Podujatie zo sdetmi.com"
+                )
+                event.begin = datetime.now().strftime("%Y-%m-%d")
+                event.make_all_day()
+
+                cal.events.add(event)
+                found_events = True
+        except Exception as e:
+            print(f"Chyba pri načítavaní stranky {page}: {e}")
+
+    # Uloženie do súboru sdetmi.ics
     with open("sdetmi.ics", "w", encoding="utf-8") as f:
         f.writelines(cal.serialize_iter())
+
+    print("Súbor sdetmi.ics bol úspešne vytvorený.")
 
 
 if __name__ == "__main__":

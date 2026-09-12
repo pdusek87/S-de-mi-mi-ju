@@ -2,8 +2,11 @@ name: Aktualizacia Kalendara
 
 on:
   schedule:
-    - cron: '0 3 * * *'  # Spustí sa každý deň o 3:00 ráno
-  workflow_dispatch:      # Umožňuje spustiť skript aj ručne
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -28,6 +31,6 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add sdetmi.ics
+          git add -A
           git commit -m "Automatická aktualizácia kalendára" || exit 0
           git push
